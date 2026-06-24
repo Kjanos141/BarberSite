@@ -1,12 +1,12 @@
 -- ============================================================
--- Blackstone Barber — MySQL Database Schema
+-- Bukta Zoltán EV — MySQL adatbázis séma
 -- Futtatás: mysql -u root -p < schema.sql
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS blackstone_barber
+CREATE DATABASE IF NOT EXISTS bukta_zoltan_ev
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE blackstone_barber;
+USE bukta_zoltan_ev;
 
 -- ---- USERS ----
 CREATE TABLE IF NOT EXISTS users (
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   email         VARCHAR(255)  NOT NULL UNIQUE,
   password_hash VARCHAR(255)  NOT NULL,
   role          ENUM('admin', 'user') NOT NULL DEFAULT 'user',
-  status        ENUM('active', 'inactive')    NOT NULL DEFAULT 'active',
+  status        ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
   last_login    DATETIME      NULL,
   created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_email  (email),
@@ -44,17 +44,16 @@ CREATE TABLE IF NOT EXISTS invites (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- DEFAULT ADMIN ACCOUNT
--- Email: admin@blackstonebarber.hu
--- Jelszó: Admin1234! (változtasd meg bejelentkezés után!)
+-- ALAPÉRTELMEZETT ADMIN FIÓK
+-- Email: admin@buktazoltan.hu
+-- Jelszó: Admin1234! (változtasd meg belépés után!)
 -- ============================================================
 INSERT INTO users (name, email, password_hash, role, status) VALUES (
-  'Adminisztrátor',
-  'admin@blackstonebarber.hu',
+  'Bukta Zoltán',
+  'admin@buktazoltan.hu',
   '$2y$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8n1oF9K5CePv7rYwXXe',
   'admin',
   'active'
 ) ON DUPLICATE KEY UPDATE id = id;
 
--- Megjegyzés: a fenti hash az 'Admin1234!' jelszóhoz tartozik
--- Generálj sajátot: php -r "echo password_hash('UjJelszó!', PASSWORD_BCRYPT, ['cost'=>12]);"
+-- Jelszó generálás: php -r "echo password_hash('UjJelszó!', PASSWORD_BCRYPT, ['cost'=>12]);"
