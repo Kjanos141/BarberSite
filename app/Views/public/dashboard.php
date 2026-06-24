@@ -14,6 +14,7 @@ require APP_PATH . '/Views/partials/head.php';
     </h1>
     <p class="hero-sub">Sikeresen bejelentkezett a Bukta Zoltán EV rendszerébe.</p>
     <div class="hero-actions">
+      <a href="/foglalas" class="btn btn-copper">Időpontfoglalás</a>
       <a href="/#kapcsolat" class="btn btn-copper">Kapcsolatfelvétel</a>
       <a href="/kijelentkezes" class="btn btn-ghost">Kilépés</a>
     </div>

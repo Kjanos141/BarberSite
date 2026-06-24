@@ -318,7 +318,7 @@ function renderCalendar() {
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(calYear, calMonth, d);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = date.toLocaleDateString('sv-SE');
     let cls = 'cal-day';
     if (date < now) cls += ' past';
     else if (date > maxDate) cls += ' blocked';
