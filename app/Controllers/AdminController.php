@@ -101,6 +101,7 @@ class AdminController
 
         $baseUrl   = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
         $inviteUrl = $baseUrl . '/regisztracio?token=' . $token;
+        print_r($inviteUrl);
 
         $subject = 'Meghívó – Bukta Zoltán EV rendszer';
         $message = "Kedves {$name}!\n\nMeghívót kaptál a Bukta Zoltán EV rendszerébe.\n\n";
@@ -150,5 +151,187 @@ class AdminController
         @mail($invite['email'], $subject, $message, $headers);
 
         Response::json(['success' => true]);
+    }
+    public function bookingsPage(): void
+    {
+        Response::view('admin/bookings', ['user' => Auth::user()]);
+    }
+
+    public function listBookings(): void
+    {
+        $filters = [
+            'status'    => $_GET['status']    ?? '',
+            'date_from' => $_GET['date_from'] ?? '',
+            'date_to'   => $_GET['date_to']   ?? '',
+        ];
+        $bookings = (new \App\Models\Booking())->getAll(array_filter($filters));
+        Response::json(['success' => true, 'bookings' => $bookings]);
+    }
+
+    public function confirmBooking(): void
+    {
+        $id      = (int)($_POST['id'] ?? 0);
+        $model   = new \App\Models\Booking();
+        $booking = $model->findById($id);
+
+        if (!$booking) {
+            Response::json(['success' => false, 'message' => 'Foglalás nem található.']);
+        }
+
+        $model->confirm($id, (int)Auth::id());
+        \App\Core\Logger::log('booking.confirm', Auth::id(), 'booking', $id, "Admin jóváhagyta: #{$id}");
+
+        // E-mail az ügyfélnek
+        $userModel = new \App\Models\User();
+        $user      = $userModel->findById((int)$booking['user_id']);
+        $service   = (new \App\Models\Service())->findById((int)$booking['service_id']);
+        if ($user && $service) {
+            (new \App\Core\Mailer())->bookingConfirmed($booking, $user, $service);
+        }
+
+        Response::json(['success' => true]);
+    }
+
+    public function rejectBooking(): void
+    {
+        $id        = (int)($_POST['id'] ?? 0);
+        $adminNote = trim($_POST['admin_note'] ?? '');
+        $model     = new \App\Models\Booking();
+        $booking   = $model->findById($id);
+
+        if (!$booking) {
+            Response::json(['success' => false, 'message' => 'Foglalás nem található.']);
+        }
+
+        $model->reject($id, $adminNote);
+        \App\Core\Logger::log('booking.reject', Auth::id(), 'booking', $id, "Admin elutasította: #{$id} - {$adminNote}");
+
+        $user    = (new \App\Models\User())->findById((int)$booking['user_id']);
+        $service = (new \App\Models\Service())->findById((int)$booking['service_id']);
+        if ($user && $service) {
+            (new \App\Core\Mailer())->bookingCancelled($booking, $user, $service, $adminNote);
+        }
+
+        Response::json(['success' => true]);
+    }
+
+    // ---- SERVICES (Admin) ----
+
+    public function servicesPage(): void
+    {
+        Response::view('admin/services', ['user' => Auth::user()]);
+    }
+
+    public function listServices(): void
+    {
+        $services = (new \App\Models\Service())->all();
+        Response::json(['success' => true, 'services' => $services]);
+    }
+
+    public function saveService(): void
+    {
+        $id       = (int)($_POST['id'] ?? 0);
+        $name     = trim($_POST['name'] ?? '');
+        $desc     = trim($_POST['description'] ?? '');
+        $duration = in_array((int)($_POST['duration'] ?? 60), [30, 60]) ? (int)$_POST['duration'] : 60;
+        $price    = $_POST['price'] !== '' ? (int)$_POST['price'] : null;
+        $color    = preg_match('/^#[0-9A-Fa-f]{6}$/', $_POST['color'] ?? '') ? $_POST['color'] : '#B87333';
+        $sort     = (int)($_POST['sort_order'] ?? 0);
+        $active   = isset($_POST['is_active']) ? 1 : 0;
+
+        if (!$name) {
+            Response::json(['success' => false, 'message' => 'A szolgáltatás neve kötelező.']);
+        }
+
+        $model = new \App\Models\Service();
+        if ($id > 0) {
+            $model->update($id, $name, $desc, $duration, $price, $color, $sort, $active);
+            \App\Core\Logger::log('service.update', Auth::id(), 'service', $id, "Szerkesztve: {$name}");
+            Response::json(['success' => true, 'message' => 'Szolgáltatás frissítve.']);
+        } else {
+            $newId = $model->create($name, $desc, $duration, $price, $color, $sort);
+            \App\Core\Logger::log('service.create', Auth::id(), 'service', $newId, "Létrehozva: {$name}");
+            Response::json(['success' => true, 'message' => 'Szolgáltatás létrehozva.', 'id' => $newId]);
+        }
+    }
+
+    public function deleteService(): void
+    {
+        $id = (int)($_POST['id'] ?? 0);
+        if (!$id) Response::json(['success' => false, 'message' => 'Hiányzó azonosító.']);
+        (new \App\Models\Service())->delete($id);
+        \App\Core\Logger::log('service.delete', Auth::id(), 'service', $id, "Deaktiválva: #{$id}");
+        Response::json(['success' => true]);
+    }
+
+    // ---- BLOCKED SLOTS (Admin) ----
+
+    public function blockedPage(): void
+    {
+        Response::view('admin/blocked', ['user' => Auth::user()]);
+    }
+
+    public function listBlocked(): void
+    {
+        $blocked = (new \App\Models\BlockedSlot())->all();
+        Response::json(['success' => true, 'blocked' => $blocked]);
+    }
+
+    public function addBlocked(): void
+    {
+        $type   = $_POST['block_type'] ?? '';
+        $valid  = ['day', 'slot', 'recurring_day', 'recurring_slot'];
+        if (!in_array($type, $valid)) {
+            Response::json(['success' => false, 'message' => 'Érvénytelen letiltás típus.']);
+        }
+
+        $data = [
+            'block_type'     => $type,
+            'block_date'     => $_POST['block_date']     ?? null,
+            'block_time'     => $_POST['block_time']     ?? null,
+            'weekday'        => isset($_POST['weekday'])   ? (int)$_POST['weekday']  : null,
+            'recurring_time' => $_POST['recurring_time'] ?? null,
+            'reason'         => trim($_POST['reason']    ?? ''),
+            'valid_from'     => $_POST['valid_from']     ?? null,
+            'valid_until'    => $_POST['valid_until']    ?? null,
+            'created_by'     => (int)Auth::id(),
+        ];
+
+        $model = new \App\Models\BlockedSlot();
+        $id    = $model->create($data);
+        \App\Core\Logger::log('blocked.create', Auth::id(), 'blocked_slot', $id,
+            "Letiltás létrehozva: {$type}");
+        Response::json(['success' => true]);
+    }
+
+    public function deleteBlocked(): void
+    {
+        $id = (int)($_POST['id'] ?? 0);
+        if (!$id) Response::json(['success' => false, 'message' => 'Hiányzó azonosító.']);
+        (new \App\Models\BlockedSlot())->delete($id);
+        \App\Core\Logger::log('blocked.delete', Auth::id(), 'blocked_slot', $id, "Letiltás törölve: #{$id}");
+        Response::json(['success' => true]);
+    }
+
+    // ---- ACTIVITY LOG ----
+
+    public function logPage(): void
+    {
+        Response::view('admin/log', ['user' => Auth::user()]);
+    }
+
+    public function listLog(): void
+    {
+        $limit = min((int)($_GET['limit'] ?? 100), 500);
+        $db    = \App\Core\Database::getInstance();
+        $stmt  = $db->prepare(
+            "SELECT al.*, u.name as user_name
+             FROM activity_log al
+             LEFT JOIN users u ON u.id = al.user_id
+             ORDER BY al.created_at DESC
+             LIMIT ?"
+        );
+        $stmt->execute([$limit]);
+        Response::json(['success' => true, 'logs' => $stmt->fetchAll()]);
     }
 }

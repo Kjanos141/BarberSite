@@ -1,5 +1,4 @@
 <?php
-alert("asd");exit();
 $title = 'Bejelentkezés — Bukta Zoltán EV';
 require APP_PATH . '/Views/partials/head.php';
 ?>
