@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Felhasználók — Blackstone Barber Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-page">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="logo-mark">B</span>
+      <span class="logo-text">BLACKSTONE</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="admin.html" class="sidebar-link">
+        <span class="nav-icon">◉</span> Áttekintés
+      </a>
+      <a href="admin-users.html" class="sidebar-link active">
+        <span class="nav-icon">◎</span> Felhasználók
+      </a>
+      <a href="admin-invite.html" class="sidebar-link">
+        <span class="nav-icon">✉</span> Meghívó küldés
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">A</div>
+        <div class="user-info">
+          <span class="user-name">Admin</span>
+          <span class="user-role">Adminisztrátor</span>
+        </div>
+      </div>
+      <a href="php/logout.php" class="logout-btn">Kilépés</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <button class="burger-btn" id="sidebarToggle">☰</button>
+      <h1 class="admin-page-title">Felhasználók kezelése</h1>
+      <a href="admin-invite.html" class="btn btn-gold topbar-action">+ Meghívó küldése</a>
+    </div>
+
+    <div class="admin-content">
+      <div class="admin-card">
+        <div class="card-header">
+          <h3>Összes felhasználó</h3>
+          <div class="filter-row">
+            <input type="text" id="searchUsers" placeholder="Keresés..." class="search-input">
+            <select id="filterRole" class="filter-select">
+              <option value="">Minden szerep</option>
+              <option value="admin">Admin</option>
+              <option value="user">Felhasználó</option>
+            </select>
+            <select id="filterStatus" class="filter-select">
+              <option value="">Minden státusz</option>
+              <option value="active">Aktív</option>
+              <option value="inactive">Inaktív</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Név</th>
+                <th>E-mail</th>
+                <th>Szerep</th>
+                <th>Státusz</th>
+                <th>Regisztrált</th>
+                <th>Műveletek</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody">
+              <tr><td colspan="6" class="table-loading">Betöltés...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="tableCount" class="table-count"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- CONFIRM MODAL -->
+  <div class="modal-overlay" id="confirmOverlay" style="display:none">
+    <div class="modal modal-sm">
+      <h3 id="confirmTitle">Megerősítés</h3>
+      <p id="confirmMsg"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="confirmCancel">Mégsem</button>
+        <button class="btn btn-danger" id="confirmOk">Megerősítés</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/admin.js"></script>
+  <script src="js/users.js"></script>
+</body>
+</html>
